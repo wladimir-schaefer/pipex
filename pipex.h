@@ -14,6 +14,7 @@ char	**get_pathes(char **environ);
 char	**get_args(char *command);
 int		open_infile(char *file1);
 int		open_outfile(char *file2);
+int		close_fd(int n, ...);
 
 
 #endif

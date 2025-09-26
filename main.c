@@ -21,9 +21,7 @@ int	main(int argc, char **argv, char **environ)
 			fd_in = open_infile(argv[1]);
 			dup2(fd_in, STDIN_FILENO);
 			dup2(fd[1], STDOUT_FILENO);
-			close(fd_in);
-			close(fd[0]);
-			close(fd[1]);
+			close_fd(fd_in, fd[0], fd[1]);
 			path = get_path(argv[2], environ);
 			printf("%s", path);
 			args = get_args(argv[2]);
@@ -37,9 +35,7 @@ int	main(int argc, char **argv, char **environ)
 			fd_out = open_outfile(argv[argc - 1]);
 			dup2(fd_out, STDOUT_FILENO);
 			dup2(fd[0], STDIN_FILENO);
-			close(fd_out);
-			close(fd[0]);
-			close(fd[1]);
+			close_fd(fd_out, fd[0], fd[1]);
 			path = get_path(argv[3], environ);
 			args = get_args(argv[3]);
 			execve(path, args, environ);
@@ -126,4 +122,23 @@ char	**get_pathes(char **environ)
 		environ++;
 	}
 	return (NULL);
+}
+
+int	close_fd(int n, ...)
+{
+	va_list	args;
+	int		res;
+	int		i;
+
+	va_start(args, n);
+	i = 0;
+	while (i < n)
+	{
+		res = close(va_arg(args, int));
+		if (res != 0)
+			return (res);
+		i++;
+	}
+	va_end(args);
+	return (0);
 }
