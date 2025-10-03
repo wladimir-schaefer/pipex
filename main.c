@@ -4,62 +4,109 @@
 int	main(int argc, char **argv, char **environ)
 {
 	t_data	*data;
-	int		arg;
-	
-	data = ft_calloc(1, sizeof(t_data));
-		// if (!data)
-		// 	error ();
-	data->fd = 0;
-	data->file1 = argv[1];
-	data->file2 = argv[argc - 1];
-	make_pipes(data, argc);
-	arg = 2;
-	if (argc >= 5)
+
+	if (argc < 5)
 	{
-		data->cpid[0] = fork();
-		if (data->cpid[0] == 0 && arg == 2)
-			exec_left_arg(data, argv[arg], environ);
-		arg++;
-
-		data->cpid[1] = fork();
-		if (data->cpid[1] == 0 && arg == argc - 2)
-			exec_right_arg(data, argv[arg], environ);
-
-		for (int i = 0; i < argc - 4; i++)
-		{
-			close(data->fds[i * 2]);
-			close(data->fds[i * 2 + 1]);
-		}
-		for (int i = 0; i < 2; i++)
-			wait(NULL);
+		ft_printf("Wrong number of arguments\n");
+		return(0);
 	}
-	// else
-	// 	error();
+	else
+	{
+		data = ft_calloc(1, sizeof(t_data));
+		if (!data)
+			// 	error ();
+		data->argc = argc;
+		data->argv = argv;
+		data->environ = environ;
+		data->fd = 0;
+		data->file1 = argv[1];
+		data->file2 = argv[argc - 1];
+		command_exec(data);
+		ft_waitpid(data);
+		// printf("Exit code: %d\n", WEXITSTATUS(status));
+		// close_fds(data->fds);
+		// close(data->file1);
+		// close(data->file2);
+	}
+	return(0);
 }
 
-void	make_pipes(t_data *data, int argc)
+int	command_exec(t_data *data)
+{
+	int	arg;
+
+	arg = 2;
+	make_pipes(data);
+	while ((arg - 2) <= (data->argc - 4))
+	{
+		data->cpid = fork();
+		// if (data->cpid == -1)
+		// 	{
+		// 		return (EXIT_FAILURE);
+		// 	}
+		if (data->cpid == 0 && arg == 2)
+			exec_left_arg(data, data->argv[arg], data->environ);
+		else if (data->cpid == 0 && arg == data->argc - 2)
+			exec_right_arg(data, data->argv[arg], data->environ);
+		else if (data->cpid == 0)
+			exec_arg(data, data->argv[arg], data->environ);
+		arg++;
+		data->fd++;
+	}
+	// close_fds(data->fds);
+	return(0);
+}
+
+int	ft_waitpid(t_data *data)
+{
+	// int	i;
+
+	// data->status = 0;
+	// i = 0;
+	// while (i < data->argc - 3)
+	// {
+	// 	waitpid(0, &data->status, 0);
+	// 	i++;
+	// }
+	for (int i = 0; i < data->argc - 3; i++) {
+		// waitpid(0, &data->status, 0);
+		wait(NULL);
+	}
+	return(0);
+}
+
+void	make_pipes(t_data *data)
 {
 	int	i;
 
-	data->fds = ft_calloc(argc - 4, sizeof(int));
+	data->fds = ft_calloc((data->argc - 4) * 2 + 1, sizeof(int));
 	// if (!data->fds)
 	// 	error();
 	i = 0;
-	while (i < argc - 4)
+	while (i < data->argc - 4)
 	{
 		pipe(&data->fds[i * 2]);
 		i++;
 	}
-	for (int i = 0; i < (argc - 4) * 2; i++)
-		printf("fd %d = %d\n", i, data->fds[i]);
+	// i++;
+	// data->fds[i] = 0;
+	for (int n = 0; n < (data->argc - 4) * 2 + 1; n++)
+		printf("fd[%d] = %d\n", n, data->fds[n]);
 }
 
 void	exec_left_arg(t_data *data, char *arg, char **environ)
 {
 	data->fd_in = open_infile(data->file1);
+	if (data->fd_in < 0) {
+		close_fds(data->fds);
+		write(2, "Bad file\n", 9);
+		exit(1);
+	}
+	printf("fd_in = %d\n", data->fd_in);
 	dup2(data->fd_in, STDIN_FILENO);
 	dup2(data->fds[data->fd * 2 + 1], STDOUT_FILENO);
-	close_fd(data->fd_in, data->fds[data->fd * 2], data->fds[1]);
+	close_fds(data->fds);
+	close(data->fd_in);
 	data->path = get_path(arg, environ);
 	data->args = get_args(arg);
 	execve(data->path, data->args, environ);
@@ -68,9 +115,26 @@ void	exec_left_arg(t_data *data, char *arg, char **environ)
 void	exec_right_arg(t_data *data, char *arg, char **environ)
 {
 	data->fd_out = open_outfile(data->file2);
+		if (data->fd_out < 0) {
+		close_fds(data->fds);
+		write(2, "Bad file\n", 9);
+		exit(1);
+	}
+	printf("fd_out = %d\n", data->fd_out);
 	dup2(data->fd_out, STDOUT_FILENO);
-	dup2(data->fds[data->fd * 2], STDIN_FILENO);
-	close_fd(data->fd_out, data->fds[0], data->fds[1]);
+	dup2(data->fds[(data->fd - 1) * 2], STDIN_FILENO);
+	close_fds(data->fds);
+	close(data->fd_out);
+	data->path = get_path(arg, environ);
+	data->args = get_args(arg);
+	execve(data->path, data->args, environ);
+}
+
+void	exec_arg(t_data *data, char *arg, char **environ)
+{
+	dup2(data->fds[data->fd * 2 + 1], STDOUT_FILENO);
+	dup2(data->fds[(data->fd -1) * 2], STDIN_FILENO);
+	close_fds(data->fds);
 	data->path = get_path(arg, environ);
 	data->args = get_args(arg);
 	execve(data->path, data->args, environ);
@@ -120,6 +184,7 @@ char	*get_path(char *command, char **environ)
 		}
 		i++;
 	}
+	
 	return (NULL);
 }
 
@@ -151,21 +216,18 @@ char	**get_pathes(char **environ)
 	return (NULL);
 }
 
-int	close_fd(int n, ...)
+int	close_fds(int *fds)
 {
-	va_list	args;
-	int		res;
-	int		i;
+	int	i;
+	int	res;
 
-	va_start(args, n);
 	i = 0;
-	while (i < n)
+	while (fds[i])
 	{
-		res = close(va_arg(args, int));
+		res = close(fds[i]);
 		if (res != 0)
 			return (res);
 		i++;
 	}
-	va_end(args);
 	return (0);
 }
