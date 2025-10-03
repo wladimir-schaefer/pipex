@@ -1,5 +1,17 @@
-#ifndef FDF_H
-# define FDF_H
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.h                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: wschafer <wschafer@student.42berlin.de>    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/03 17:19:29 by wschafer          #+#    #+#             */
+/*   Updated: 2025/10/03 18:33:02 by wschafer         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#ifndef PIPEX_H
+# define PIPEX_H
 
 # include <sys/stat.h>
 # include <fcntl.h>
@@ -32,12 +44,13 @@ int		ft_waitpid(t_data *data);
 char	*get_path(char *command, char **environ);
 char	**get_pathes(char **environ);
 char	**get_args(char *command);
-int		open_infile(char *file1);
-int		open_outfile(char *file2);
+int		open_infile(t_data *data);
+int		open_outfile(t_data *data);
 int		close_fds(int *fds);
-void	exec_left_arg(t_data *data, char *arg, char **environ);
-void	exec_right_arg(t_data *data, char *arg, char **environ);
-void	exec_arg(t_data *data, char *arg, char **environ);
+void	exec_left_arg(t_data *data, char *arg);
+void	exec_right_arg(t_data *data, char *arg);
+void	exec_arg(t_data *data, char *arg);
 void	make_pipes(t_data *data);
+void	free_split(char **split);
 
 #endif
