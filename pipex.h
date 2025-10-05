@@ -6,7 +6,7 @@
 /*   By: wschafer <wschafer@student.42berlin.de>    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/03 17:19:29 by wschafer          #+#    #+#             */
-/*   Updated: 2025/10/03 18:33:02 by wschafer         ###   ########.fr       */
+/*   Updated: 2025/10/05 17:41:18 by wschafer         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 # include <unistd.h>
 # include "libft/libft.h"
 # include <sys/wait.h>
+# include <string.h>
 
 typedef struct s_data
 {
@@ -30,11 +31,9 @@ typedef struct s_data
 	int		fd_out;
 	char	*path;
 	char	**args;
-	char	*file1;
-	char	*file2;
 	int		*fds;
 	int		fd;
-	pid_t	cpid;
+	pid_t	*cpid;
 	pid_t	status;
 }	t_data;
 
@@ -51,6 +50,7 @@ void	exec_left_arg(t_data *data, char *arg);
 void	exec_right_arg(t_data *data, char *arg);
 void	exec_arg(t_data *data, char *arg);
 void	make_pipes(t_data *data);
-void	free_split(char **split);
+void	free_and_exit(t_data *data, int exit_code);
+void	free_arr(char **arr);
 
 #endif
